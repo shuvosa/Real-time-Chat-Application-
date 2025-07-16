@@ -45,7 +45,7 @@ Clone the repository (or create the files manually):
 If you're starting from scratch, create a directory named chat-app and place index.html and server.js inside it.
 
 # If cloning from a repo (replace with your repo URL)
-git clone https://github.com/shuvosa/chat-app.git
+git clone https://github.com/shuvosa/Real-time-Chat-Application-.git
 cd chat-app
 
 Initialize Node.js project and install dependencies:
