@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Chat App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        /* Custom scrollbar for chat messages */
+        #messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        #messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        #messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        #messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="flex flex-col w-full max-w-lg h-[80vh] bg-white rounded-xl shadow-2xl overflow-hidden">
+        <!-- Chat Header -->
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 flex items-center justify-between rounded-t-xl shadow-md">
+            <h1 class="text-2xl font-bold">Real-time Chat</h1>
+            <span class="text-sm opacity-90">Online</span>
+        </div>
+
+        <!-- Messages Display Area -->
+        <div id="messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50">
+            <!-- Messages will be appended here -->
+            <div class="flex items-start">
+                <img class="w-8 h-8 rounded-full mr-3" src="https://placehold.co/32x32/1a73e8/ffffff?text=U" alt="User Avatar">
+                <div class="bg-blue-100 text-blue-800 p-3 rounded-lg max-w-[80%] shadow-sm">
+                    <p class="font-medium">Welcome!</p>
+                    <p class="text-sm">This is a real-time chat application. Start typing to send messages.</p>
+                    <span class="text-xs text-gray-500 mt-1 block text-right">Just now</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Input Area -->
+        <form id="form" action="" class="flex p-4 border-t border-gray-200 bg-white">
+            <input id="input" type="text" placeholder="Type your message..." autocomplete="off" class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 text-base transition duration-200 ease-in-out placeholder-gray-500">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-r-lg shadow-lg transform transition duration-300 ease-in-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Send
+            </button>
+        </form>
+    </div>
+
+    <!-- Socket.IO Client CDN -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        // Initialize Firebase variables (These are placeholders and will be provided by the Canvas environment)
+        // In a real setup, you would have your actual Firebase config here.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Ensure these variables are logged for debugging if needed
+        console.log("App ID:", appId);
+        console.log("Firebase Config:", firebaseConfig);
+        console.log("Initial Auth Token:", initialAuthToken);
+
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+
+        // Connect to the Socket.IO server.
+        // In a production environment, replace 'http://localhost:3000' with your server's URL.
+        const socket = io('http://localhost:3000'); // Connects to the server running on port 3000
+
+        // Function to display a message in the chat window
+        function displayMessage(messageText) {
+            const item = document.createElement('div');
+            item.className = 'flex items-start';
+
+            // Simple avatar for demonstration
+            const avatar = document.createElement('img');
+            avatar.className = 'w-8 h-8 rounded-full mr-3';
+            avatar.src = `https://placehold.co/32x32/${Math.floor(Math.random()*16777215).toString(16)}/ffffff?text=U`; // Random color avatar
+            avatar.alt = 'User Avatar';
+
+            const messageBubble = document.createElement('div');
+            messageBubble.className = 'bg-blue-500 text-white p-3 rounded-lg max-w-[80%] shadow-md break-words';
+            messageBubble.textContent = messageText;
+
+            const timestamp = document.createElement('span');
+            timestamp.className = 'text-xs text-gray-300 mt-1 block text-right';
+            const now = new Date();
+            timestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            messageBubble.appendChild(timestamp);
+            item.appendChild(avatar);
+            item.appendChild(messageBubble);
+
+            messages.appendChild(item);
+            // Scroll to the latest message
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Event listener for form submission (sending a message)
+        form.addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevent default form submission behavior (page reload)
+            if (input.value) {
+                // Emit 'chat message' event to the server with the message content
+                socket.emit('chat message', input.value);
+                input.value = ''; // Clear the input field
+            }
+        });
+
+        // Event listener for 'chat message' event from the server
+        socket.on('chat message', (msg) => {
+            // When a message is received from the server, display it
+            displayMessage(msg);
+        });
+
+        // Event listener for when a user connects
+        socket.on('user connected', () => {
+            displayMessage('A user has connected.');
+        });
+
+        // Event listener for when a user disconnects
+        socket.on('user disconnected', () => {
+            displayMessage('A user has disconnected.');
+        });
+
+        // Handle Socket.IO connection errors
+        socket.on('connect_error', (err) => {
+            console.error('Socket.IO connection error:', err.message);
+            displayMessage('Could not connect to the chat server. Please ensure the server is running.');
+        });
+    </script>
+</body>
+</html>
+][-5]
